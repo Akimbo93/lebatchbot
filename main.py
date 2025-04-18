@@ -1,14 +1,26 @@
 import logging
+import os
 from aiogram import Bot, Dispatcher, types
 from aiogram.utils import executor
 from aiogram.types import ParseMode
-import os
+from threading import Thread
+from flask import Flask
 
 API_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', 'YOUR_TOKEN_HERE')
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
 
 logging.basicConfig(level=logging.INFO)
+
+# Заглушка Flask для Render
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    return "LeBatch is alive"
+
+def run_flask():
+    app.run(host="0.0.0.0", port=10000)
 
 @dp.message_handler(commands=['start'])
 async def start_handler(message: types.Message):
@@ -23,7 +35,6 @@ async def handle_batch(message: types.Message):
     await message.answer(result, parse_mode=ParseMode.MARKDOWN)
 
 def check_batch_code(code):
-    # Пример заглушки
     fake_data = {
         "38R103W": "*Dior Sauvage EDP*\n📅 Дата производства: Октябрь 2023\n🏭 Завод: Франция\n✅ Свежий, бери смело!",
         "8X01": "*Chanel Bleu EDP*\n📅 Дата производства: Июль 2022\n⚠️ Может быть уже не в лучшей форме, нюхай сам."
@@ -31,4 +42,5 @@ def check_batch_code(code):
     return fake_data.get(code, "❓ Не нашёл этот батч в базе. Возможно, бренд не поддерживается.")
 
 if __name__ == '__main__':
+    Thread(target=run_flask).start()
     executor.start_polling(dp, skip_updates=True)
