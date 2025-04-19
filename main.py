@@ -5,6 +5,7 @@ from aiogram.utils import executor
 from aiogram.types import ParseMode
 from threading import Thread
 from flask import Flask
+from parser import checkfresh_parser  # импорт нашего парсера
 
 API_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', 'YOUR_TOKEN_HERE')
 bot = Bot(token=API_TOKEN)
@@ -12,7 +13,7 @@ dp = Dispatcher(bot)
 
 logging.basicConfig(level=logging.INFO)
 
-# Заглушка Flask для Render
+# Заглушка Flask для Render / Ping
 app = Flask(__name__)
 
 @app.route('/')
@@ -31,15 +32,16 @@ async def handle_batch(message: types.Message):
     code = message.text.strip().upper()
     await message.answer("🔍 Проверяю батч-код...")
 
-    result = check_batch_code(code)
-    await message.answer(result, parse_mode=ParseMode.MARKDOWN)
+    # Пока принудительно бренд Chanel — дальше сделаем автоопределение
+    brand = "chanel"
+    result = checkfresh_parser(brand, code)
 
-def check_batch_code(code):
-    fake_data = {
-        "38R103W": "*Dior Sauvage EDP*\n📅 Дата производства: Октябрь 2023\n🏭 Завод: Франция\n✅ Свежий, бери смело!",
-        "8X01": "*Chanel Bleu EDP*\n📅 Дата производства: Июль 2022\n⚠️ Может быть уже не в лучшей форме, нюхай сам."
-    }
-    return fake_data.get(code, "❓ Не нашёл этот батч в базе. Возможно, бренд не поддерживается.")
+    if result["status"] == "ok":
+        await message.answer(f"✅ Найдено:\n\n{result['result']}")
+    elif result["status"] == "not_found":
+        await message.answer("❓ Не удалось определить дату по этому батчу.")
+    else:
+        await message.answer(f"⚠️ Ошибка при запросе:\n{result['result']}")
 
 if __name__ == '__main__':
     Thread(target=run_flask).start()
